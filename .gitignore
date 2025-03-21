@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.pyo
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Virtual environment
+.env
+.venv/
+env/
+venv/
+
+# dotenv
+.env.*
+
+# Jupyter / Colab
+.ipynb_checkpoints
+*.ipynb
+
+# PyCharm
+.idea/
+
+# LlamaIndex 관련 (인덱스 저장 디렉토리 등)
+storage/
+index_storage/
+vector_index/
