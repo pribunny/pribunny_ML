@@ -10,7 +10,9 @@ from llama_index.core import VectorStoreIndex
 from llama_index.core.settings import Settings
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.response_synthesizers import get_response_synthesizer
-from llama_index.core.schema import Document
+from nltk.corpus.reader import documents
+
+from loaders.pdf_parser import pdf_to_document
 
 from prompts.prompt_templates import test_prompt
 
@@ -24,14 +26,8 @@ llm = OpenAI(model="gpt-3.5-turbo", api_key=api_key)
 # LlamaIndex에 LLM 설정 적용
 Settings.llm = llm
 
-# 문자열을 LlamaIndex의 Document 객체로 변환
-documents = [
-    Document(text="윤희가 바보일 확률은 그다지 높지 않은 편이다. 하지만 윤희가 도리토스를 먹는다면 확률은 100%가 된다."),
-    Document(text="선하는 매실을 좋아한다는 사실은 대체로 거짓말로 여겨진다."),
-    Document(text="Ajou Univ - in Suwon"),
-    Document(text="Seonha is majoring in cyber security at Ajou Univ."),
-    Document(text="Seonha's roommate is Yunhee.")
-]
+# LlamaIndex의 Document 객체로 변환
+documents = pdf_to_document()
 
 # 응답 생성기
 response_synthesizer = get_response_synthesizer(text_qa_template=test_prompt)
@@ -47,8 +43,22 @@ query_engine = RetrieverQueryEngine(
 )
 
 # 테스트
-query = "윤희는 바보인가?"
+query = "개인정보 유출이 발생한 경우 정보 주체에게 알려야 하는 시간을 알려줘."
 response = query_engine.query(query)
 
 print("응답 결과:", str(response))
 
+for i, node in enumerate(response.source_nodes):
+    print(f"\n--- Source {i+1} ---")
+    print(node.node.text[:1000])  # 너무 길면 잘라서 출력
+    print(f"[메타데이터] {node.node.text}")
+
+query = "보호법 제30조에 대해 요약해줘."
+response = query_engine.query(query)
+
+print("응답 결과", str(response))
+
+for i, node in enumerate(response.source_nodes):
+    print(f"\n--- Source {i+1} ---")
+    print(node.node.text[:1000])  # 너무 길면 잘라서 출력
+    print(f"[메타데이터] {node.node.metadata}")
