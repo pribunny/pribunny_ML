@@ -1,8 +1,5 @@
 import os
 
-from dotenv import load_dotenv
-from pathlib import Path
-
 from llama_parse import LlamaParse
 from PyPDF2 import PdfReader, PdfWriter
 
@@ -11,16 +8,16 @@ import nest_asyncio
 """
 입력 받은 파일을 파싱해서 넘겨줌
 PDF는 한 장씩 파싱
+Todo
+ 파일 인덱싱 못할 때, 예외 처리
 """
+
 
 nest_asyncio.apply()
 
-def load_env():
-    env_path = Path(__file__).parent / '.env'
-    load_dotenv(dotenv_path=env_path)
-
 def get_parser():
     api_key = os.environ.get("LLAMA_CLOUD_API_KEY")
+    print(api_key)
     #파서 설정
     parser = LlamaParse(
         api_key = api_key,
@@ -49,7 +46,7 @@ def split_pdf_by_page(input_pdf_path, output_dir):
 
     return page_paths
 
-def parse_pages_to_md(file_path: str, output_dir: str):
+def parse_pages_to_md(file_path, output_dir):
     os.makedirs(output_dir, exist_ok=True)
     parser = get_parser()
 
@@ -114,4 +111,4 @@ def process_md_files(md_dir, source_name, source_type):
             }
             all_chunks.append(chunk_data)
 
-        return all_chunks
+    return all_chunks
