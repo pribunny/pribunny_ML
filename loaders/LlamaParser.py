@@ -4,6 +4,7 @@ from llama_parse import LlamaParse
 from PyPDF2 import PdfReader, PdfWriter
 
 import nest_asyncio
+import time
 
 """
 입력 받은 파일을 파싱해서 넘겨줌
@@ -17,7 +18,6 @@ nest_asyncio.apply()
 
 def get_parser():
     api_key = os.environ.get("LLAMA_CLOUD_API_KEY")
-    print(api_key)
     #파서 설정
     parser = LlamaParse(
         api_key = api_key,
@@ -50,15 +50,45 @@ def parse_pages_to_md(file_path, output_dir):
     os.makedirs(output_dir, exist_ok=True)
     parser = get_parser()
 
+    failed_pages = []
+    retry_pages = []
+
     for i, page_path in enumerate(file_path):
         print(f"Parsing page {i+1}: {page_path}")
-        documents = parser.load_data(page_path)
+        try:
+            documents = parser.load_data(page_path)
 
-        md_output_path = os.path.join(output_dir, f"page_{i+1}.md")
-        with open(md_output_path, "w", encoding="utf-8") as f:
-            f.write(documents[0].text)
+            md_output_path = os.path.join(output_dir, f"page_{i+1}.md")
+            with open(md_output_path, "w", encoding="utf-8") as f:
+                f.write(documents[0].text)
 
-        print(f"Saved: {md_output_path}")
+            print(f"Saved: {md_output_path}")
+            time.sleep(1)  # 슬립 추가
+        except Exception as e:
+            print(f"Failed to parse page{i+1}: {page_path}")
+            print(f"Error: {e}")
+            retry_pages.append({
+                "page_num": i + 1,
+                "page_path": page_path
+            })
+
+    time.sleep(1)  # 슬립 추가
+
+    if retry_pages:
+        for page in retry_pages:
+            try:
+                documents = parser.load_data(page["page_path"])
+                md_output_path = os.path.join(output_dir, f"page_{page["page_num"]}.md")
+                with open(md_output_path, "w", encoding="utf-8") as f:
+                    f.write(documents[0].text)
+                print(f"Saved: {md_output_path}")
+            except Exception as e:
+                print(f"Failed to parse page{i+1}: {page["page_path"]}")
+                print(f"Error: {e}")
+
+                failed_pages.append(page["page_path"])
+
+        return failed_pages
 
 def split_by_paragraph(text):
     # 문단 단위 분리(빈 줄 있는 경우)

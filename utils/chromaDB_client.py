@@ -1,8 +1,9 @@
 import os
 
+import chromadb
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
-from typing import Optional
+from typing import Optional, List
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # 상위 폴더
 persist_path = os.path.join(project_root, "chroma_db")
@@ -31,3 +32,6 @@ def get_chroma_client(
         embedding_function=embedding_model,
         collection_name=collection_name
     )
+
+chroma_client = chromadb.Client()
+collection = chroma_client.create_collection(name="my_collection")

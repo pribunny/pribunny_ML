@@ -18,7 +18,6 @@ api_key = os.getenv("OPENAI_API_KEY")
 # OpenAI 모델 설정
 llm = ChatOpenAI(model="gpt-3.5-turbo", api_key=api_key, temperature=0.2,)
 
-# 응답 생성기
 vectorstore = get_chroma_client(collection_name="test")
 
 qa_chain = RetrievalQA.from_chain_type(
@@ -29,7 +28,7 @@ qa_chain = RetrievalQA.from_chain_type(
     return_source_documents=True
 )
 
-query = "'개인정보처리자는 구체적이고 명확한 수집 목적을 가지고 개인정보를 수집해야 한다.' 이 내용에 대해서 자세히 알려줘."
+query = "개인정보보호법 제30조, 개인정보 처리방침의 수립 및 공개에 대해서 요약, 쉬운 설명 부탁해."
 response = qa_chain.invoke({"query": query})
 
 

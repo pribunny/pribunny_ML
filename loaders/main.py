@@ -4,6 +4,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from glob import glob
 
 from LlamaParser import split_pdf_by_page, parse_pages_to_md, process_md_files
 
@@ -13,31 +14,49 @@ from langchain_core.documents import Document
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-input_pdf = '../data/pdf/개인정보 처리 통합 안내서(안)(2024.12).pdf'
+input_dir = '../data/pdf/법률'
 output_dir = 'output'
 parse_output = 'output/md'
 
-# page_paths = split_pdf_by_page(input_pdf, output_dir)
-#
-# parse_pages_to_md(page_paths, parse_output)
-#
-# print("파싱 완료")
+pdf_files = glob(os.path.join(input_dir, '*.pdf')) # output dir 안에 있는 pdf 전체
+all_failed_pages = []
 
-raw_chunks = process_md_files(parse_output, '개인정보 처리 통합 안내서(안)(2024.12)', '안내서')
-print(os.listdir(output_dir))
-for i in raw_chunks:
-    print(i)
-chunks = [
-    Document(page_content=chunk["text"], metadata=chunk["metadata"])
-    for chunk in raw_chunks  # raw_chunks는 dict 리스트
-]
+for input_pdf in pdf_files:
+    basename = os.path.splitext(os.path.basename(input_pdf))[0]
 
-vectorstore = get_chroma_client(collection_name="test")
+    page_output_dir = os.path.join(output_dir, basename)
+    md_output_dir = os.path.join(parse_output, basename)
 
-# 문서 저장
-vectorstore.add_documents(chunks)
+    try:
+        os.makedirs(page_output_dir, exist_ok=True)
+        os.makedirs(md_output_dir, exist_ok=True)
+    except FileExistsError as e:
+        # 디렉토리가 존재하면 이미 파싱한 파일임
+        print(f"❌ 디렉토리가 이미 존재합니다: {e.filename}")
+        continue
 
-print("문서 수:", vectorstore._collection.count())  # ✅ 저장 확인
-# 재불러오기
-vectorstore = get_chroma_client(collection_name="test")
-print("문서 수:", vectorstore._collection.count())  # ✅ 저장 확인
+    page_paths = split_pdf_by_page(input_pdf, page_output_dir)
+
+    failed_pages = parse_pages_to_md(page_paths, md_output_dir)
+    print(f"=============={basename} 파싱 실패 페이지 =================")
+    if failed_pages:
+        for failed_page in failed_pages:
+            print(failed_page)
+
+    print(f"{basename} 파싱 완료")
+
+    raw_chunks = process_md_files(md_output_dir, basename, '법률')
+    print(os.listdir(md_output_dir))
+    for i in raw_chunks:
+        print(i)
+    chunks = [
+        Document(page_content=chunk["text"], metadata=chunk["metadata"])
+        for chunk in raw_chunks  # raw_chunks는 dict 리스트
+    ]
+
+    vectorstore = get_chroma_client(collection_name="test")
+
+    # 문서 저장
+    vectorstore.add_documents(chunks)
+
+    print("저장 완료")
