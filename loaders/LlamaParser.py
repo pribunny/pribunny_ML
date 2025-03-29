@@ -95,7 +95,7 @@ def split_by_paragraph(text):
     paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
     return paragraphs
 
-def merge_short_paragraphs(paragraphs, min_length=200):
+def merge_short_paragraphs(paragraphs, min_length=500):
     # 짧은 문단 합치기
     merged = []
     buffer = ""

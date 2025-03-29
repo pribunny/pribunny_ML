@@ -39,4 +39,4 @@ print("답변:\n", response["result"])
 print("\n📄 참조 문서:")
 for i, doc in enumerate(response["source_documents"], 1):
     print(f"\n[{i}] {doc.metadata}")
-    print(doc.page_content[:500])  # 길면 앞부분만 보여줘도 됨
+    print(doc.page_content)  # 길면 앞부분만 보여줘도 됨
