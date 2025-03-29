@@ -9,7 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
 
 from prompts.prompt_templates import prompt_template
-from utils.chromaDB_client import get_chroma_client
+from utils.chromaDB_client import get_vectorstore
 
 # 환경변수에서 OpenAI API 키 로드
 load_dotenv()
@@ -18,7 +18,7 @@ api_key = os.getenv("OPENAI_API_KEY")
 # OpenAI 모델 설정
 llm = ChatOpenAI(model="gpt-3.5-turbo", api_key=api_key, temperature=0.2,)
 
-vectorstore = get_chroma_client(collection_name="test")
+vectorstore = get_vectorstore(collection_name="test")
 
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
