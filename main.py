@@ -8,30 +8,50 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
 
-from prompts.prompt_templates import prompt_template
 from utils.chromaDB_client import get_vectorstore
 
+from prompts.prompt_templates import summary_template, unfair_detect_template
+from loaders.html_parser import clean_html
+
 # 환경변수에서 OpenAI API 키 로드
-load_dotenv()
+load_dotenv('local_data/.env')
 api_key = os.getenv("OPENAI_API_KEY")
 
+print(api_key)
 # OpenAI 모델 설정
-llm = ChatOpenAI(model="gpt-3.5-turbo", api_key=api_key, temperature=0.2,)
+llm = ChatOpenAI(model="gpt-4o-2024-08-06", api_key=api_key, temperature=0.2,)
 
 vectorstore = get_vectorstore(collection_name="test")
 
+data_path = 'data/kurly_unfair.txt'
+with open(data_path, encoding='utf-8') as c : #파일 내용 불러오기
+    html_data = c.read()
+
+'''
+# summary_template에 HTML 원문 바로 전달
+clean_text = clean_html(html_data)
+prompt_input = summary_template.format(full_clause=clean_text)
+
+# 모델 실행
+response = llm.invoke(prompt_input)
+
+# 결과 출력
+print("📌 요약 결과:")
+print(response)
+'''
+
+
+#기본 QA 사용 코드
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     retriever=vectorstore.as_retriever(search_kwargs={"k": 5}),
     chain_type="stuff", # 이것도 알아봐야 함
-    chain_type_kwargs={"prompt": prompt_template},
+    chain_type_kwargs={"prompt": unfair_detect_template},
     return_source_documents=True
 )
 
-query = "개인정보보호법 제30조, 개인정보 처리방침의 수립 및 공개에 대해서 요약, 쉬운 설명 부탁해."
+query = html_data
 response = qa_chain.invoke({"query": query})
-
-
 # 응답 출력
 print("답변:\n", response["result"])
 
