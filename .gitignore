@@ -30,3 +30,6 @@ venv/
 storage/
 index_storage/
 vector_index/
+
+# chroma_db
+chroma_db/
