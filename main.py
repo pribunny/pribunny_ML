@@ -17,7 +17,6 @@ from loaders.html_parser import clean_html
 load_dotenv('.env')
 api_key = os.getenv("OPENAI_API_KEY")
 
-print(api_key)
 # OpenAI 모델 설정
 llm = ChatOpenAI(model="gpt-4o-2024-08-06", api_key=api_key, temperature=0.2,)
 
