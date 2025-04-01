@@ -167,30 +167,90 @@ summary_short_template = PromptTemplate(
     )
 )
 
-#QA 방식 -> QA가 아닌 방식에선 question을 다른 변수 명(Full_clause)으로 변경해도 됨
-unfair_detect_template = PromptTemplate( #독소조항 탐지
-    input_variables= ["context", "question"], #참고할 문서, 전체 조항을 받음
-    template = (
-        #1. context를 기반으로 full_clause와 맞지 않는 부분이 있는 지 확인
-        #2. 만약 존재한다면, 그 이유를 제시
-        # 이유의 형태 : 맞지 않는 부분 제시 -> 왜 맞지 않는 지 이유 제시, 근거 법 조항 제시
-        #3. 만약 존재하지 않는다면, 문제 없는 조항입니다. 출력하기.
+# #QA 방식 -> QA가 아닌 방식에선 question을 다른 변수 명(Full_clause)으로 변경해도 됨
+# unfair_detect_template = PromptTemplate( #독소조항 탐지
+#     input_variables= ["context", "question"], #참고할 문서, 전체 조항을 받음
+#     template = (
+#         #1. context를 기반으로 full_clause와 맞지 않는 부분이 있는 지 확인
+#         #2. 만약 존재한다면, 그 이유를 제시
+#         # 이유의 형태 : 맞지 않는 부분 제시 -> 왜 맞지 않는 지 이유 제시, 근거 법 조항 제시
+#         #3. 만약 존재하지 않는다면, 문제 없는 조항입니다. 출력하기.
 
-        "You are a legal assistant that analyzes whether a clause in a privacy policy contains potentially unfair or abusive content.\n\n"
-        "Only use the provided context to evaluate the clause and cite sources if relevant. Do not rely on general knowledge or assumptions or any reasons outside the provided context.\n\n"
+#         "You are a legal assistant that analyzes whether a clause in a privacy policy contains potentially unfair or abusive content.\n\n"
+#         "Only use the provided context to evaluate the clause and cite sources if relevant. Do not rely on general knowledge or assumptions or any reasons outside the provided context.\n\n"
 
-        "Full_clause : {question}\n\n"
-        "Context : {context}\n\n"
+#         "Full_clause : {question}\n\n"
+#         "Context : {context}\n\n"
 
-        "Your task is to perform the following actions:\n"
-        "1 - Based on the context, determine whether the clause contains any part that violates the legal standard or is unfair to the user.\n"
-        "2 - If any issues are found, clearly explain what part of the clause is problematic and why. write your answer in the following format:\n"
-        "   - 1)Identify the specific problematic phrase. -  Problematic phrase : <exact problematic text> \n"
-        "   - 2)Explain clearly why it is problematic. - Reason : <why it conflicts, based only on the context>\n"
-        "   - 3)Cite the relevant law or precedent it violates. - Relevant Law or Precedent : <specific part of the context>\n"
-        "3 - If there is no issue, respond with: 'This clause does not contain any legal or fairness issues.'.\n\n"
+#         "Your task is to perform the following actions:\n"
+#         "1 - Based on the context, determine whether the clause contains any part that violates the legal standard or is unfair to the user.\n"
+#         "2 - If any issues are found, clearly explain what part of the clause is problematic and why. write your answer in the following format:\n"
+#         "   - 1)Identify the specific problematic phrase. -  Problematic phrase : <exact problematic text> \n"
+#         "   - 2)Explain clearly why it is problematic. - Reason : <why it conflicts, based only on the context>\n"
+#         "   - 3)Cite the relevant law or precedent it violates. - Relevant Law or Precedent : <specific part of the context>\n"
+#         "3 - If there is no issue, respond with: 'This clause does not contain any legal or fairness issues.'.\n\n"
 
-        "Answer : "
+#         "Answer : "
+#     )
+# )
+
+# 독소조항 탐지 수정
+unfair_detect_template = PromptTemplate(
+    input_variables=["context", "question"],
+    template=(
+        # 1. context(관련 법률)과 Instructions(개인정보처리방침 작성 가이드라인)을 기반으로 full_clause(개인정보처리방침 항목)와 맞지 않는 부분이 있는 지 확인
+        # 2. 만약 존재한다면, 그 이유를 제시
+        # 답변 : 맞지 않는 부분 제시 -> 왜 맞지 않는 지 이유 제시, 이유는 무조건 근거 법 조항을 기반으로 개인정보처리방침은 어떻게 작성되어야 한다 식의 서술
+        # 만약 존재하지 않는다면, "해당 항목은 법률 및 개인정보처리방침 작성 가이드라인에 위반되는 사항이 없습니다" 출력하기.
+
+        "당신은 개인정보처리방침의 항목을 분석하여 법적으로 불공정하거나 위법한 내용이 있는지 확인하는 법률 어시스턴트입니다.\n\n"
+        "다음의 두 가지 기준을 바탕으로 항목을 분석하십시오:\n"
+        "1. 법적 기준 (Context): 아래 'Context'에 포함된 개인정보 보호법 등 법령\n"
+        "2. 개인정보처리방침 작성 가이드라인 (Guidelines): 개인정보처리방침을 작성할 때 준수해야 할 항목별 작성 기준\n\n"
+
+        "분석 시 아래 원칙을 따르십시오:\n"
+        "- Full_clause가 context에 포함된 법 조항을 위반한 경우:\n"
+        "  해당 법 조항과 관련있는 개인정보처리방침 작성 가이드라인을 매핑하여,\n"
+        "  개인정보처리방침이 어떻게 작성되어야 하는지를 다음 형식으로 서술하십시오:\n"
+        "  개인정보 보호법 제XX조에 따르면, 개인정보처리방침은 ~~하게 작성되어야 합니다.\n\n"
+        "- 반드시 위 문장을 포함한 서술형 설명으로 작성하십시오. 단순 법 조항 나열이 아닌, 조항의 의미와 그에 따른 작성 방식까지 명확히 설명하십시오.\n\n"
+
+        "Full_clause:\n{question}\n\n"
+        "Context (법적 기준):\n{context}\n\n"
+
+        "Full_clause가 context에 포함된 법률 조항을 위반한 경우, 다음 형식에 따라 답변하십시오:\n"
+        "1) 문제 표현: <문제가 되는 문장을 그대로 작성>\n"
+        "2) 문제 이유: <위 원칙에 따라 서술된 문제 설명 포함>\n"
+        "3) 근거 기준:\n"
+        "   - 관련 법령 조항: <관련 법 조항 명시>\n"
+
+        "Full_clause에 아무런 문제가 없는 경우, 다음과 같이 작성하십시오:\n"
+        "'해당 항목은 법률 및 개인정보처리방침 작성 가이드라인에 위반되는 사항이 없습니다.'\n"
+
+        "※ 개인정보처리방침 작성 가이드라인:\n"
+        "[1. 필수 포함 항목]\n"
+        "- 개인정보처리방침에는 반드시 다음 항목들이 포함되어야 합니다:\n"
+        "  • 개인정보의 처리 목적\n"
+        "  • 처리하는 개인정보의 항목\n"
+        "  • 개인정보의 보유 및 이용 기간\n"
+        "  • 개인정보의 파기 절차 및 방법\n"
+        "  • 개인정보의 안전성 확보조치\n"
+        "  • 정보주체와 법정대리인의 권리 및 행사 방법\n"
+        "  • 개인정보 보호책임자 및 담당 부서 정보\n"
+        "  • 개인정보 처리방침의 변경 이력\n\n"
+        "[2. 제목]\n"
+        "- 개인정보처리방침 문서 상단에는 반드시 “개인정보 처리방침”이라는 표준 명칭을 사용해야 합니다.\n\n"
+        "[3. 개인정보의 처리 목적]\n"
+        "- 처리 목적은 구체적이고 명확하게 작성해야 하며, '~등'과 같은 모호한 표현을 사용해서는 안 됩니다.\n"
+        "- 고유식별정보는 개인정보 보호법 제24조제1항에 따라, 법령에 의한 명확한 근거가 있거나, 별도의 동의를 받은 경우에만 처리할 수 있습니다.\n\n"
+        "[4. 처리하는 개인정보의 항목]\n"
+        "- 수집하는 개인정보 항목은 명확히 나열되어야 하며, '~등'과 같은 추상적·모호한 표현은 금지됩니다.\n"
+        "- 정보주체의 동의 없이 수집하는 항목이 있을 경우, 해당 항목과 그 처리의 법적 근거를 명확히 기재하고, 동의 기반 항목과 구분해야 합니다.\n"
+        "- 법적 근거를 작성할 때는 법령명뿐만 아니라 조문까지 구체적으로 명시해야 합니다.\n"
+        "- 업무 수행 또는 서비스 제공 중 자동으로 수집되는 항목이 있다면, 어떤 업무 과정에서 어떤 항목이 수집되는지를 함께 명시해야 합니다.\n"
+
+        "답변:"
+        
     )
 )
 
