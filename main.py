@@ -14,7 +14,7 @@ from prompts.prompt_templates import summary_template, unfair_detect_template
 from loaders.html_parser import clean_html
 
 # 환경변수에서 OpenAI API 키 로드
-load_dotenv('local_data/.env')
+load_dotenv('.env')
 api_key = os.getenv("OPENAI_API_KEY")
 
 print(api_key)
@@ -22,10 +22,6 @@ print(api_key)
 llm = ChatOpenAI(model="gpt-4o-2024-08-06", api_key=api_key, temperature=0.2,)
 
 vectorstore = get_vectorstore(collection_name="test")
-
-data_path = 'data/kurly_unfair.txt'
-with open(data_path, encoding='utf-8') as c : #파일 내용 불러오기
-    html_data = c.read()
 
 '''
 # summary_template에 HTML 원문 바로 전달
@@ -50,7 +46,7 @@ qa_chain = RetrievalQA.from_chain_type(
     return_source_documents=True
 )
 
-query = html_data
+# query = html_data
 response = qa_chain.invoke({"query": query})
 # 응답 출력
 print("답변:\n", response["result"])

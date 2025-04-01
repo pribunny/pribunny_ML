@@ -1,7 +1,11 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+from glob import glob
 
 from llama_parse import LlamaParse
 from PyPDF2 import PdfReader, PdfWriter
+from langchain_core.documents import Document
 
 import nest_asyncio
 import time
@@ -12,7 +16,8 @@ PDF는 한 장씩 파싱
 Todo
  파일 인덱싱 못할 때, 예외 처리
 """
-
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 nest_asyncio.apply()
 
@@ -92,7 +97,7 @@ def parse_pages_to_md(file_path, output_dir):
 
 def split_by_paragraph(text):
     # 문단 단위 분리(빈 줄 있는 경우)
-    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+    paragraphs = [p.strip() for p in text.split('#') if p.strip()]
     return paragraphs
 
 def merge_short_paragraphs(paragraphs, min_length=500):
@@ -142,3 +147,45 @@ def process_md_files(md_dir, source_name, source_type):
             all_chunks.append(chunk_data)
 
     return all_chunks
+
+def law_chunks(input_dir = '../data/pdf/법률', output_dir = 'output/txt'):
+    laws = os.listdir(input_dir)
+
+    chunks = []
+
+    for law in laws:
+        input_path = os.path.join(input_dir, law)
+
+        chunks_by_clause = os.listdir(input_path)
+        for clause in chunks_by_clause:
+            clause_path = os.path.join(input_path, clause)
+            with open(clause_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            title = clause.split('_')
+            chapter = title[0] # 장
+            section = title[1] # 절
+            clause_name = title[2] # 조
+            delete = False
+            if title[3] == '삭제':
+                delete = True
+            metadata = {
+                "chapter": chapter,
+                "section": section,
+                "clause": clause_name,
+                "type": "법률",
+                "delete": delete,
+            }
+            doc = Document(page_content=content, metadata=metadata)
+            chunks.append(doc)
+
+    return chunks
+
+from utils.chromaDB_client import get_vectorstore
+
+vectorstore=get_vectorstore(collection_name="test")
+chunks = law_chunks()
+
+vectorstore.add_documents(chunks)
+
+
