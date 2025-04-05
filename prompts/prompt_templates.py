@@ -88,6 +88,7 @@ summary_short_template = PromptTemplate(
         # 3 - 각 항목별로 내용을 요약해라. 항목마다 들어가야하는 주요 내용은 다음과 같다.(category-specific instructions)
         "You are a helpful assistant. Answer only based on the given Full_clause.\n\n"
         "Summarize the content, but do not omit contextually important information.\n\n"
+        "Strictly follow all the steps. Never skip or merge steps.\n\n"
 
         "Follow the steps : \n"
         "Step 1 : Classify the content into one or more of the 9 main categories (main_category).\n"
