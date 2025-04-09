@@ -170,6 +170,7 @@ def law_chunks(input_dir = '../data/pdf/법률', output_dir = 'output/txt'):
             if title[3] == '삭제':
                 delete = True
             metadata = {
+                "law": law,
                 "chapter": chapter,
                 "section": section,
                 "clause": clause_name,
